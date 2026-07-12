@@ -1,6 +1,6 @@
 import React from "react";
 import songsData from "../data/songs.json";
-import { ArrowLeft, Play, Sparkles, Plus, Star } from "lucide-react";
+import { ArrowLeft, Play, Sparkles, Plus } from "lucide-react";
 
 export const SongSelector = ({ mood, customSongs = [], onSelectSong, onAddSongClick, onBack }) => {
   const defaultSongs = songsData[mood] || [];

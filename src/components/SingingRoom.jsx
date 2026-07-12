@@ -12,7 +12,6 @@ export const SingingRoom = ({ song, mood, onFinish, onBack }) => {
     error,
     startListening,
     stopListening,
-    resetTranscript,
   } = useSpeechToText();
 
   const [volume, setVolume] = useState(0);
@@ -28,7 +27,7 @@ export const SingingRoom = ({ song, mood, onFinish, onBack }) => {
 
   const extractYoutubeId = (url) => {
     if (!url) return "";
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : url;
   };
@@ -37,7 +36,7 @@ export const SingingRoom = ({ song, mood, onFinish, onBack }) => {
   const cleanWord = (word) =>
     word
       .toLowerCase()
-      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?'"’]/g, "")
+      .replace(/[.,/#!$%^&*;:{}=-_`~()?'"’]/g, "")
       .trim();
 
   // Extract all words
@@ -53,7 +52,7 @@ export const SingingRoom = ({ song, mood, onFinish, onBack }) => {
     if (!transcript) return;
 
     const transcriptWords = transcript.split(/\s+/).map(cleanWord);
-    const newMatches = new Set(matchedWords);
+    const newMatches = new Set();
 
     transcriptWords.forEach((word) => {
       if (allSongWords.includes(word)) {
@@ -67,7 +66,7 @@ export const SingingRoom = ({ song, mood, onFinish, onBack }) => {
       const percentage = Math.round((newMatches.size / totalUniqueWords) * 100);
       setScore(percentage);
     }
-  }, [transcript]);
+  }, [transcript, allSongWords, totalUniqueWords]);
 
   // Determine active line index based on completion
   const getActiveLineIndex = () => {

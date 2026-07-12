@@ -85,7 +85,7 @@ function extractJson(content) {
   return null;
 }
 
-export const AISearchDrawer = ({ onAddSong, onBack, mood }) => {
+export const AISearchDrawer = ({ onAddSong, onBack }) => {
   const [apiBaseUrl, setApiBaseUrl] = useState(() => {
     const saved = localStorage.getItem("mf_api_base");
     if (saved && saved !== "https://agentrouter.org/api/v1" && saved !== "http://localhost:3001") {
@@ -128,7 +128,7 @@ export const AISearchDrawer = ({ onAddSong, onBack, mood }) => {
 
   const extractYoutubeId = (url) => {
     if (!url) return "";
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : url;
   };
@@ -262,7 +262,7 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
         throw new Error("AI did not return any lyrics lines. Please try another song or use the manual adder.");
       }
 
-      const finalLyrics = lyrics || lyricsDisplay.join(" ").toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?'"’]/g, "");
+      const finalLyrics = lyrics || lyricsDisplay.join(" ").toLowerCase().replace(/[.,/#!$%^&*;:{}=-_`~()?'"’]/g, "");
 
       const newSong = {
         id: `custom_${Date.now()}`,
@@ -299,7 +299,7 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
     const fullCleanedLyrics = lines
       .join(" ")
       .toLowerCase()
-      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?'"’]/g, "");
+      .replace(/[.,/#!$%^&*;:{}=-_`~()?'"’]/g, "");
 
     const newSong = {
       id: `custom_${Date.now()}`,
