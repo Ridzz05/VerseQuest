@@ -19,10 +19,17 @@ async function chatComplete({ requestUrl, apiKey, modelName, messages, jsonMode 
       })
     });
   } catch (networkErr) {
-    if (requestUrl.includes("localhost:3001")) {
+    const proxyUrl = import.meta.env.VITE_PROXY_URL;
+    const isProxyRequest =
+      requestUrl.includes("localhost:3001") ||
+      (proxyUrl && requestUrl.startsWith(proxyUrl.replace(/\/$/, "")));
+
+    if (isProxyRequest) {
       throw new Error(
-        "Could not reach the local CORS proxy (localhost:3001). " +
-        "Start it with `npm run proxy` in another terminal, then retry."
+        "Could not reach the AI proxy. " +
+        (proxyUrl
+          ? "Check that the serverless proxy is deployed and VITE_PROXY_URL is correct."
+          : "Start it with `npm run proxy` in another terminal, then retry.")
       );
     }
     throw new Error(`Network error: ${networkErr.message}`);
@@ -155,9 +162,12 @@ Given a song title, artist, or lyric excerpt, recognize the song, retrieve a 4-8
 Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do not include markdown code block syntax.`;
 
       let requestUrl = `${cleanBaseUrl}/chat/completions`;
-      
+
       if (cleanBaseUrl.includes("agentrouter.org")) {
-        requestUrl = "http://localhost:3001/chat/completions";
+        const proxyUrl = import.meta.env.VITE_PROXY_URL;
+        requestUrl = proxyUrl
+          ? `${proxyUrl.replace(/\/$/, "")}/chat/completions`
+          : "http://localhost:3001/chat/completions";
       }
 
       const messages = [

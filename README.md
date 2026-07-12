@@ -49,6 +49,25 @@ Copy `.env.example` to `.env`:
 
 `.env` is git-ignored so secrets are never committed.
 
+## Deploying to Vercel
+
+Vercel has no persistent ports, so the local `node proxy.cjs` server cannot run
+there. Instead, `api/[...slug].js` is a **serverless function** that forwards AI
+requests to AgentRouter server-to-server (same origin, so no CORS issues).
+
+1. Import the repo into Vercel (Framework Preset: *Vite*).
+2. Set environment variables in the Vercel dashboard:
+   - `VITE_API_KEY` — your AgentRouter key.
+   - `VITE_API_BASE_URL` — `https://agentrouter.org/v1`.
+   - `VITE_API_MODEL` — e.g. `claude-opus-4-8`.
+   - `VITE_YOUTUBE_API_KEY` — optional (direct YouTube search).
+   - `VITE_PROXY_URL` — set to **`/api`** so the frontend calls the function
+     at `/api/chat/completions`. Leave empty for local dev (uses `npm run proxy`).
+3. Deploy. Vercel builds with `npm run build` and serves the `api/` functions.
+
+> Locally you still run `npm run proxy` (localhost:3001) and leave `VITE_PROXY_URL`
+> unset. `proxy.cjs` is only for development; production uses the serverless function.
+
 ## Scripts
 
 | Script | Description |
