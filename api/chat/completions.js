@@ -1,17 +1,14 @@
 import https from "https";
 
-// Vercel serverless function that replaces the local `node proxy.cjs`.
-// Vercel has no persistent ports, so the CORS proxy must run as a function.
-// The browser calls this same-origin (e.g. /api/chat/completions) and this
-// function forwards the request to AgentRouter server-to-server.
+// Vercel serverless function (replaces the local `node proxy.cjs`).
+// The browser calls this same-origin (/api/chat/completions) and this function
+// forwards the request to AgentRouter server-to-server (no CORS issues).
 
 export const config = {
-  api: { bodyParser: false },
-  maxDuration: 60
+  api: { bodyParser: false }
 };
 
 const TARGET_HOST = "agentrouter.org";
-const TARGET_PATH_PREFIX = "/v1";
 
 export default function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -24,11 +21,6 @@ export default function handler(req, res) {
     return;
   }
 
-  const slug = Array.isArray(req.query.slug)
-    ? req.query.slug.join("/")
-    : req.query.slug || "";
-  const targetPath = `${TARGET_PATH_PREFIX}/${slug}`;
-
   const chunks = [];
   req.on("data", (chunk) => chunks.push(chunk));
   req.on("end", () => {
@@ -37,7 +29,7 @@ export default function handler(req, res) {
     const options = {
       method: "POST",
       hostname: TARGET_HOST,
-      path: targetPath,
+      path: "/v1/chat/completions",
       headers: {
         "Content-Type": "application/json",
         "Authorization": req.headers["authorization"],
