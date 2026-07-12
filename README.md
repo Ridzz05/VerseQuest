@@ -43,7 +43,7 @@ Copy `.env.example` to `.env`:
 | Variable | Purpose |
 |----------|---------|
 | `VITE_API_KEY` | AgentRouter (or other OpenAI-compatible) API key for AI song metadata. Falls back to the in-app Settings panel. |
-| `VITE_API_BASE_URL` | API base URL (default `https://agentrouter.org/v1`). |
+| `VITE_API_BASE_URL` | API base URL (default `https://agentrouter.org/api/v1`). |
 | `VITE_API_MODEL` | Model ID (default `claude-opus-4-8`). |
 | `VITE_YOUTUBE_API_KEY` | YouTube Data API v3 key for direct video search. Optional — without it, the app falls back to the AI-provided ID and a manual search link. |
 
@@ -58,7 +58,7 @@ so the browser calls it **directly** from the deployed site (and from local dev)
 1. Import the repo into Vercel (Framework Preset: *Vite*).
 2. Set environment variables in the Vercel dashboard:
    - `VITE_API_KEY` — your AgentRouter key.
-   - `VITE_API_BASE_URL` — `https://agentrouter.org/v1`.
+    - `VITE_API_BASE_URL` — `https://agentrouter.org/api/v1`.
    - `VITE_API_MODEL` — e.g. `claude-opus-4-8`.
    - `VITE_YOUTUBE_API_KEY` — optional (direct YouTube search).
    - `VITE_PROXY_URL` — **leave empty / unset**. Only set this if you run your
