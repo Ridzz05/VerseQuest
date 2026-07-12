@@ -40,7 +40,17 @@ async function chatComplete({ requestUrl, apiKey, modelName, messages, jsonMode 
     throw new Error(`API Router Error (${response.status}): ${errText || response.statusText}`);
   }
 
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `AI returned a non-JSON response (status ${response.status}). ` +
+      `Raw output: ${text.slice(0, 200)}`
+    );
+  }
+
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
     throw new Error("No response content from the AI model.");

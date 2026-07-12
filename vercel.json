@@ -1,10 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "functions": {
-    "api/chat/completions.js": {
-      "maxDuration": 60
+  "rewrites": [
+    {
+      "source": "/api/chat/completions",
+      "destination": "https://agentrouter.org/v1/chat/completions"
     }
-  }
+  ]
 }

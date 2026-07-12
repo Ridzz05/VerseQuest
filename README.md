@@ -52,8 +52,9 @@ Copy `.env.example` to `.env`:
 ## Deploying to Vercel
 
 Vercel has no persistent ports, so the local `node proxy.cjs` server cannot run
-there. Instead, `api/chat/completions.js` is a **serverless function** that forwards AI
-requests to AgentRouter server-to-server (same origin, so no CORS issues).
+there. Instead, `vercel.json` uses a **`rewrites` rule** that proxies
+`/api/chat/completions` to AgentRouter **server-side** (same origin for the
+browser, so no CORS issues, and no serverless-function deploy needed).
 
 1. Import the repo into Vercel (Framework Preset: *Vite*).
 2. Set environment variables in the Vercel dashboard:
@@ -61,14 +62,15 @@ requests to AgentRouter server-to-server (same origin, so no CORS issues).
    - `VITE_API_BASE_URL` — `https://agentrouter.org/v1`.
    - `VITE_API_MODEL` — e.g. `claude-opus-4-8`.
    - `VITE_YOUTUBE_API_KEY` — optional (direct YouTube search).
-   - `VITE_PROXY_URL` — set to **`/api`** so the frontend calls the function
-     at `/api/chat/completions`. Leave empty for local dev (uses `npm run proxy`).
-3. Deploy. `vercel.json` declares the `api/chat/completions.js` serverless
-   function (forwarding to AgentRouter) and the Vite `dist` output. Vercel builds
-   with `npm run build` and serves the function.
+   - `VITE_PROXY_URL` — set to **`/api`** so the frontend calls
+     `/api/chat/completions` (proxied to AgentRouter). Leave empty for local
+     dev (uses `npm run proxy`).
+3. Deploy. `vercel.json` rewrites `/api/chat/completions` →
+   `https://agentrouter.org/v1/chat/completions`. Vercel builds with
+   `npm run build` and serves the static site.
 
 > Locally you still run `npm run proxy` (localhost:3001) and leave `VITE_PROXY_URL`
-> unset. `proxy.cjs` is only for development; production uses the serverless function.
+> unset. `proxy.cjs` is only for development; production uses the Vercel rewrite.
 
 ## Scripts
 
