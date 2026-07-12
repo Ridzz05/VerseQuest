@@ -1,8 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/chat/completions",
-      "destination": "https://agentrouter.org/v1/chat/completions"
-    }
-  ]
+  "framework": "vite",
+  "outputDirectory": "dist"
 }

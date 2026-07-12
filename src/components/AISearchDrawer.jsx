@@ -20,16 +20,12 @@ async function chatComplete({ requestUrl, apiKey, modelName, messages, jsonMode 
     });
   } catch (networkErr) {
     const proxyUrl = import.meta.env.VITE_PROXY_URL;
-    const isProxyRequest =
-      requestUrl.includes("localhost:3001") ||
-      (proxyUrl && requestUrl.startsWith(proxyUrl.replace(/\/$/, "")));
+    const isProxyRequest = proxyUrl && requestUrl.startsWith(proxyUrl.replace(/\/$/, ""));
 
     if (isProxyRequest) {
       throw new Error(
-        "Could not reach the AI proxy. " +
-        (proxyUrl
-          ? "Check that the serverless proxy is deployed and VITE_PROXY_URL is correct."
-          : "Start it with `npm run proxy` in another terminal, then retry.")
+        "Could not reach the AI proxy at " + proxyUrl +
+        ". Check that it is deployed and VITE_PROXY_URL is correct."
       );
     }
     throw new Error(`Network error: ${networkErr.message}`);
@@ -175,9 +171,11 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
 
       if (cleanBaseUrl.includes("agentrouter.org")) {
         const proxyUrl = import.meta.env.VITE_PROXY_URL;
-        requestUrl = proxyUrl
-          ? `${proxyUrl.replace(/\/$/, "")}/chat/completions`
-          : "http://localhost:3001/chat/completions";
+        if (proxyUrl) {
+          requestUrl = `${proxyUrl.replace(/\/$/, "")}/chat/completions`;
+        }
+        // Otherwise call AgentRouter directly: it sends `Access-Control-Allow-Origin: *`,
+        // so no CORS proxy is required (works on Vercel and in local dev).
       }
 
       const messages = [
