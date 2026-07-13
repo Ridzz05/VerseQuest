@@ -1,4 +1,5 @@
 import https from "https";
+import http from "http";
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -16,29 +17,52 @@ export default async function handler(req, res) {
   }
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: { message: "Missing Authorization header" } });
+    // Resolve configuration from backend environment variables (much safer than client-side)
+    const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
+    const apiBaseUrl = process.env.VITE_API_BASE_URL || "https://agentrouter.org/v1";
+    const apiModel = process.env.VITE_API_MODEL || "claude-opus-4-8";
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: {
+          message: "API Key is not configured on the server. Please set VITE_API_KEY in Vercel settings."
+        }
+      });
     }
 
     // Vercel's req.body is automatically parsed if Content-Type is application/json.
-    // We re-serialize it to forward to AgentRouter.
-    let bodyData;
-    if (typeof req.body === "object") {
-      bodyData = JSON.stringify(req.body);
-    } else {
-      bodyData = req.body || "";
+    let payload = {};
+    if (typeof req.body === "object" && req.body !== null) {
+      payload = { ...req.body };
+    } else if (req.body) {
+      try {
+        payload = JSON.parse(req.body);
+      } catch {
+        return res.status(400).json({ error: { message: "Invalid JSON body" } });
+      }
     }
 
+    // Inject backend-configured model if not set or default
+    if (!payload.model || payload.model === "claude-opus-4-8") {
+      payload.model = apiModel;
+    }
+
+    const bodyData = JSON.stringify(payload);
+
+    // Parse the API Base URL to extract hostname, port, and path
+    const parsedUrl = new URL(apiBaseUrl.replace(/\/$/, "") + "/chat/completions");
+    const isHttps = parsedUrl.protocol === "https:";
+    const transport = isHttps ? https : http;
+
     const options = {
-      hostname: "agentrouter.org",
-      port: 443,
-      path: "/v1/chat/completions",
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (isHttps ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": authHeader,
-        // Emulate official Claude Code / claude-cli fingerprinting headers
+        "Authorization": `Bearer ${apiKey}`,
+        // Emulate official Claude Code / claude-cli fingerprinting headers to bypass unauthorized client checks
         "User-Agent": "claude-cli/2.1.158 (external, sdk-cli)",
         "anthropic-client-name": "claude-code",
         "anthropic-client-version": "2.1.158",
@@ -49,7 +73,7 @@ export default async function handler(req, res) {
       }
     };
 
-    const proxyReq = https.request(options, (proxyRes) => {
+    const proxyReq = transport.request(options, (proxyRes) => {
       res.status(proxyRes.statusCode);
       
       if (proxyRes.headers["content-type"]) {

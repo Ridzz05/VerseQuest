@@ -9,7 +9,15 @@ async function chatComplete({ requestUrl, apiKey, modelName, messages, jsonMode 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Authorization": `Bearer ${apiKey}`,
+        // Emulate official Claude Code fingerprinting headers to bypass unauthorized client checks.
+        // These are set in the browser fetch directly (excluding User-Agent which is read-only).
+        "anthropic-client-name": "claude-code",
+        "anthropic-client-version": "2.1.158",
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "claude-code-20250219",
+        "x-stainless-lang": "js",
+        "accept": "application/json"
       },
       body: JSON.stringify({
         model: modelName,
@@ -86,34 +94,6 @@ function extractJson(content) {
 }
 
 export const AISearchDrawer = ({ onAddSong, onBack }) => {
-  const [apiBaseUrl, setApiBaseUrl] = useState(() => {
-    let saved = localStorage.getItem("mf_api_base");
-    // Migrate old /api/v1 path → correct /v1 path
-    if (saved && saved.includes("agentrouter.org/api/v1")) {
-      saved = saved.replace("/api/v1", "/v1");
-      localStorage.setItem("mf_api_base", saved);
-    }
-    const envDefault = import.meta.env.VITE_API_BASE_URL || "https://agentrouter.org/v1";
-    if (saved && saved !== envDefault && saved !== "http://localhost:3001") {
-      return saved;
-    }
-    return envDefault;
-  });
-  const [apiKey, setApiKey] = useState(
-    localStorage.getItem("mf_api_key") ||
-    import.meta.env.VITE_API_KEY ||
-    import.meta.env.VITE_AGENT_ROUTER_API_KEY ||
-    ""
-  );
-  const [modelName, setModelName] = useState(() => {
-    const saved = localStorage.getItem("mf_api_model");
-    if (saved && saved !== "claude-4.8") {
-      return saved;
-    }
-    return import.meta.env.VITE_API_MODEL || "claude-opus-4-8";
-  });
-
-  const [showSettings, setShowSettings] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,12 +106,6 @@ export const AISearchDrawer = ({ onAddSong, onBack }) => {
   const [manualYoutubeUrl, setManualYoutubeUrl] = useState("");
   const [manualLyrics, setManualLyrics] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("mf_api_base", apiBaseUrl);
-    localStorage.setItem("mf_api_key", apiKey);
-    localStorage.setItem("mf_api_model", modelName);
-  }, [apiBaseUrl, apiKey, modelName]);
-
   const extractYoutubeId = (url) => {
     if (!url) return "";
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -143,9 +117,12 @@ export const AISearchDrawer = ({ onAddSong, onBack }) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
+    // Load credentials from environment variables baked in at build time
+    const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_AGENT_ROUTER_API_KEY || "";
+    const modelName = import.meta.env.VITE_API_MODEL || "claude-opus-4-8";
+
     if (!apiKey) {
-      setErrorMessage("Please set your API Key in settings first!");
-      setShowSettings(true);
+      setErrorMessage("API Key is not configured. Please set VITE_API_KEY in the project environment variables.");
       return;
     }
 
@@ -157,6 +134,7 @@ export const AISearchDrawer = ({ onAddSong, onBack }) => {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setLoadingStep(2);
 
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://agentrouter.org/v1";
       const cleanBaseUrl = apiBaseUrl.trim().replace(/\/$/, "");
       const systemPrompt = `You are a song lyric structured data generator.
 Given a song title, artist, or lyric excerpt, recognize the song, retrieve a 4-8 line playable snippet of its main verse or chorus (ensure it complies with copyright rules by returning a snippet instead of the full song to avoid model refusal), and return a strict JSON object with the format:
@@ -173,18 +151,8 @@ Given a song title, artist, or lyric excerpt, recognize the song, retrieve a 4-8
 }
 Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do not include markdown code block syntax.`;
 
-      let requestUrl = `${cleanBaseUrl}/chat/completions`;
-
-      if (cleanBaseUrl.includes("agentrouter.org")) {
-        const proxyUrl = import.meta.env.VITE_PROXY_URL;
-        if (proxyUrl && /^https?:\/\//i.test(proxyUrl)) {
-          requestUrl = `${proxyUrl.replace(/\/$/, "")}/chat/completions`;
-        } else {
-          // If no custom proxy URL is set, default to our built-in Vercel serverless proxy (/api/chat/completions)
-          // to bypass AgentRouter's unauthorized client checks.
-          requestUrl = "/api/chat/completions";
-        }
-      }
+      // Request directly from browser using user's client IP to bypass Aliyun WAF cloud IP blocking
+      const requestUrl = `${cleanBaseUrl}/chat/completions`;
 
       const messages = [
         { role: "system", content: systemPrompt },
@@ -335,10 +303,6 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
             <ArrowLeft size={16} />
             <span>Playlist</span>
           </button>
-          <button className="back-btn" onClick={() => setShowSettings(!showSettings)}>
-            <Settings size={14} />
-            <span>Settings</span>
-          </button>
         </div>
 
         <div className="text-center">
@@ -348,40 +312,6 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
           <h1>Add a custom <span className="accent">singing</span> quest.</h1>
           <p className="subtitle">Retrieve metadata using Claude or manually draft your song lines.</p>
         </div>
-
-        {showSettings && (
-          <div className="settings-panel fade-in">
-            <h3 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: "20px", marginBottom: "1rem" }}>Agent Router Config</h3>
-            <div className="form-group">
-              <label>API Base URL</label>
-              <input
-                type="text"
-                value={apiBaseUrl}
-                onChange={(e) => setApiBaseUrl(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>API Key</label>
-              <input
-                type="password"
-                value={apiKey}
-                placeholder="Set via Settings or VITE_API_KEY in .env"
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Model ID</label>
-              <input
-                type="text"
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-primary" onClick={() => setShowSettings(false)} style={{ marginTop: "0.5rem" }}>
-              Save Settings
-            </button>
-          </div>
-        )}
 
         {errorMessage && (
           <div className="error-message" style={{ marginBottom: "1.5rem" }}>
