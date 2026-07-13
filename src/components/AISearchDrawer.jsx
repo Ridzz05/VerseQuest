@@ -87,8 +87,13 @@ function extractJson(content) {
 
 export const AISearchDrawer = ({ onAddSong, onBack }) => {
   const [apiBaseUrl, setApiBaseUrl] = useState(() => {
-    const saved = localStorage.getItem("mf_api_base");
-    const envDefault = import.meta.env.VITE_API_BASE_URL || "https://agentrouter.org/api/v1";
+    let saved = localStorage.getItem("mf_api_base");
+    // Migrate old /api/v1 path → correct /v1 path
+    if (saved && saved.includes("agentrouter.org/api/v1")) {
+      saved = saved.replace("/api/v1", "/v1");
+      localStorage.setItem("mf_api_base", saved);
+    }
+    const envDefault = import.meta.env.VITE_API_BASE_URL || "https://agentrouter.org/v1";
     if (saved && saved !== envDefault && saved !== "http://localhost:3001") {
       return saved;
     }

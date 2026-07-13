@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
       const options = {
         hostname: TARGET_HOST,
         port: 443,
-        path: "/api/v1/chat/completions",
+        path: "/v1/chat/completions",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
