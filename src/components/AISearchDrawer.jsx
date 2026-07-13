@@ -177,11 +177,13 @@ Ensure the lyrics are a playable 4-8 line segment. Output only the raw JSON. Do 
 
       if (cleanBaseUrl.includes("agentrouter.org")) {
         const proxyUrl = import.meta.env.VITE_PROXY_URL;
-        if (proxyUrl) {
+        if (proxyUrl && /^https?:\/\//i.test(proxyUrl)) {
           requestUrl = `${proxyUrl.replace(/\/$/, "")}/chat/completions`;
+        } else {
+          // If no custom proxy URL is set, default to our built-in Vercel serverless proxy (/api/chat/completions)
+          // to bypass AgentRouter's unauthorized client checks.
+          requestUrl = "/api/chat/completions";
         }
-        // Otherwise call AgentRouter directly: it sends `Access-Control-Allow-Origin: *`,
-        // so no CORS proxy is required (works on Vercel and in local dev).
       }
 
       const messages = [
